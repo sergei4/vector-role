@@ -1,0 +1,70 @@
+---
+- name: Vector | Create directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ vector_path }}"
+    state: directory
+    mode: '0755'     
+  tags: [vector, install]   
+- name: Vector | Get vector distrib
+  become: true
+  ansible.builtin.get_url:
+    url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-x86_64-unknown-linux-gnu.tar.gz"
+    dest: "{{ vector_path }}-{{ vector_version }}.tar.gz"
+  tags: [vector, install]   
+- name: Vector | Create temp dir
+  become: true
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: unpack
+  register: tmpdir
+  tags: [vector, install]   
+- name: Vector | Unzip
+  become: true
+  ansible.builtin.unarchive:
+    src: "{{ vector_path }}-{{ vector_version }}.tar.gz"
+    dest: "{{ tmpdir.path }}"
+    remote_src: yes
+  tags: [vector, install]   
+- name: Vector | Copy to executable directory
+  become: true
+  ansible.builtin.shell: >
+    rsync -a --delete "{{ tmpdir.path }}"/*/ "{{ vector_path }}"/
+  tags: [vector, install]             
+
+- name: Vector | Template config
+  become: true
+  ansible.builtin.template:
+    src: vector.yml.j2
+    dest: "{{ vector_path }}/config/vector.yaml"
+    mode: "644"
+    validate: "{{ vector_path }}/bin/vector validate --no-environment --config-yaml %s"
+  tags: [vector, config]     
+
+- name: Vector | Create system unit
+  become: true
+  ansible.builtin.template:
+    src: vector.service.j2
+    dest: /etc/systemd/system/vector.service
+    mode: "644"
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_gid }}"
+  tags: [vector, config]      
+
+- name: Vector | Ensure Vector data directory exists
+  become: true
+  ansible.builtin.file:
+    path: /var/lib/vector
+    state: directory
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_gid }}"
+    mode: '0755'
+  tags: [vector, config]         
+
+- name: Vector | Start service
+  become: true
+  ansible.builtin.systemd:
+    name: vector
+    state: started
+    daemon_reload: true
+  tags: [vector, start service]

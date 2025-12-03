@@ -1,0 +1,18 @@
+galaxy_info:
+  author: Mikhail Eremkin
+  description: Setup and configure Vector
+  company: Mobicode.pro
+
+  license: MIT
+
+  min_ansible_version: 2.10
+
+  platforms:
+  - name: CentOS
+    versions:
+    - 8
+    - 9
+
+  galaxy_tags: [vector]
+
+dependencies: []
