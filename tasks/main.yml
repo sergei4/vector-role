@@ -80,17 +80,7 @@
     owner: "{{ ansible_user_id }}"
     group: "{{ ansible_user_gid }}"
     mode: "0755"
-  tags: [vector, config]  
-
-# - name: Vector | Start vector
-#   become: true
-#   ansible.builtin.shell: >
-#     nohup {{ vector_path }}/bin/vector --config-dir {{ vector_path }}/config 
-#     > /var/log/vector.log 2>&1 &
-#   register: vector_start
-#   changed_when: false       
-#   failed_when: vector_start.rc != 0  
-#   tags: [vector, start] 
+  tags: [vector, config] 
 
 - name: Vector | Create system unit
   become: true
