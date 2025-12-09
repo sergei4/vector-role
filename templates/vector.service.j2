@@ -7,9 +7,9 @@ Requires=network-online.target
 [Service]
 User={{ ansible_user_id }}
 Group={{ ansible_user_gid}}
-ExecStartPre={{ vector_path }}/bin/vector validate --config-dir {{ vector_path }}/config
-ExecStart={{ vector_path }}/bin/vector --config-dir {{ vector_path }}/config
-ExecReload={{ vector_path }}/bin/vector validate --no-environment --config-dir {{ vector_path }}/config
+ExecStartPre={{ vector_path }}/bin/vector validate --config-dir {{ vector_config_path }}
+ExecStart={{ vector_path }}/bin/vector --config-dir {{ vector_config_path }}
+ExecReload={{ vector_path }}/bin/vector validate --no-environment --config-dir {{ vector_config_path }}
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 AmbientCapabilities=CAP_NET_BIND_SERVICE

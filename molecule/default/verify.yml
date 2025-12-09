@@ -1,0 +1,25 @@
+---
+# This is an example playbook to execute Ansible tests.
+
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+  
+  - name: Validate vector config syntax
+    command: "/opt/vector/bin/vector validate --config-yaml /var/vector/config/vector.yaml"
+    register: vector_validate
+    changed_when: false
+    failed_when: vector_validate.rc != 0
+
+  - name: Check vector service status
+    command: systemctl is-active vector
+    register: vector_service
+    changed_when: false
+
+  - name: Assert vector service is active
+    assert:
+      that:
+        - vector_service.stdout == "active"
+      fail_msg: "Vector service is NOT running."
+      success_msg: "Vector service is active."

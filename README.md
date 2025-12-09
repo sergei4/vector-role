@@ -1,4 +1,4 @@
-Role Name
+Role Name: Vector
 =========
 
 Ansible Role that install and configure Vector on CentOS
@@ -6,7 +6,11 @@ Ansible Role that install and configure Vector on CentOS
 Requirements
 ------------
 
-Target OS: CentOS 8, CentOS 9
+Target OS: 
+  CentOS 8 
+  CentOS 9 
+  Ubuntu 22.04 and newer
+  Debian 10 and newer
 
 Ansible version >= 2.10
 

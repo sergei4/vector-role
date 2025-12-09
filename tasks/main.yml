@@ -6,18 +6,28 @@
     state: directory
     mode: '0755'     
   tags: [vector, install]   
-- name: Vector | Get vector distrib
-  become: true
-  ansible.builtin.get_url:
-    url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-x86_64-unknown-linux-gnu.tar.gz"
-    dest: "{{ vector_path }}-{{ vector_version }}.tar.gz"
-  tags: [vector, install]   
+- name: Vector | Get vector distrib with fallback
+  block:
+    - name: Vector | Get vector distrib from Timber
+      become: true
+      ansible.builtin.get_url:
+        url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-x86_64-unknown-linux-gnu.tar.gz"
+        dest: "{{ vector_path }}-{{ vector_version }}.tar.gz"
+  rescue:
+    - name: Vector | Get vector distrib from GitHub
+      become: true
+      ansible.builtin.get_url:
+        url: "https://github.com/vectordotdev/vector/releases/download/v{{ vector_version }}/vector-{{ vector_version }}-x86_64-unknown-linux-gnu.tar.gz"
+        dest: "{{ vector_path }}-{{ vector_version }}.tar.gz"
+  tags: [vector, install]
+
 - name: Vector | Create temp dir
   become: true
   ansible.builtin.tempfile:
     state: directory
     suffix: unpack
   register: tmpdir
+  changed_when: false
   tags: [vector, install]   
 - name: Vector | Unzip
   become: true
@@ -25,41 +35,72 @@
     src: "{{ vector_path }}-{{ vector_version }}.tar.gz"
     dest: "{{ tmpdir.path }}"
     remote_src: yes
+  changed_when: false  
   tags: [vector, install]   
+- name: Update APT cache
+  become: true
+  apt:
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+- name: Ensure rsync is installed
+  become: true
+  ansible.builtin.package:
+    name: rsync
+    state: present
+  tags: [vector, install]    
 - name: Vector | Copy to executable directory
   become: true
   ansible.builtin.shell: >
     rsync -a --delete "{{ tmpdir.path }}"/*/ "{{ vector_path }}"/
+  changed_when: false
   tags: [vector, install]             
+
+- name: Vector | Ensure Vector config directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ vector_config_path }}"
+    state: directory
+    mode: "0755"
+  tags: [vector, config]  
 
 - name: Vector | Template config
   become: true
   ansible.builtin.template:
     src: vector.yml.j2
-    dest: "{{ vector_path }}/config/vector.yaml"
-    mode: "644"
-    validate: "{{ vector_path }}/bin/vector validate --no-environment --config-yaml %s"
+    dest: "{{ vector_config_path }}/vector.yaml"
+    mode: "0644"
+    validate: "{{ vector_path }}/bin/vector validate --no-environment --config-yaml %s" 
   tags: [vector, config]     
+
+- name: Vector | Ensure Vector data directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ vector_data_path }}"
+    state: directory
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_gid }}"
+    mode: "0755"
+  tags: [vector, config]  
+
+# - name: Vector | Start vector
+#   become: true
+#   ansible.builtin.shell: >
+#     nohup {{ vector_path }}/bin/vector --config-dir {{ vector_path }}/config 
+#     > /var/log/vector.log 2>&1 &
+#   register: vector_start
+#   changed_when: false       
+#   failed_when: vector_start.rc != 0  
+#   tags: [vector, start] 
 
 - name: Vector | Create system unit
   become: true
   ansible.builtin.template:
     src: vector.service.j2
     dest: /etc/systemd/system/vector.service
-    mode: "644"
+    mode: "0644"
     owner: "{{ ansible_user_id }}"
     group: "{{ ansible_user_gid }}"
-  tags: [vector, config]      
-
-- name: Vector | Ensure Vector data directory exists
-  become: true
-  ansible.builtin.file:
-    path: /var/lib/vector
-    state: directory
-    owner: "{{ ansible_user_id }}"
-    group: "{{ ansible_user_gid }}"
-    mode: '0755'
-  tags: [vector, config]         
+  tags: [vector, config]          
 
 - name: Vector | Start service
   become: true

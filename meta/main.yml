@@ -1,4 +1,7 @@
 galaxy_info:
+  namespace: mobicode
+  role_name: vector_role 
+
   author: Mikhail Eremkin
   description: Setup and configure Vector
   company: Mobicode.pro

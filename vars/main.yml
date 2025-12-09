@@ -1,2 +1,4 @@
 ---
 vector_path: "/opt/vector"
+vector_config_path: "/var/vector/config"
+vector_data_path: "/var/vector/data"
