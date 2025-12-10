@@ -1,0 +1,6 @@
+.ansible/
+.venv/
+.yamllint
+.tox
+Python*
+python
